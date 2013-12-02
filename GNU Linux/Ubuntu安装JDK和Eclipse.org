@@ -1,0 +1,53 @@
+#+BLOG: cnblogs
+#+POSTID: 3454874
+#+DATE: [2013-11-24 日 18:35]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: GNU Linux
+#+TAGS: Java, Ubuntu
+#+DESCRIPTION: There is no Oracle JDK in APT repository of Ubuntu12.04 and up versions, this article tell how to install Oracle JDK in Ubuntu. Based on that, tell how to install Eclipse manually.
+#+TITLE: Ubuntu安装JDK和Eclipse
+* 准备工作
+  下载[[http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html][Oracle JDK]]，解压缩：
+  #+BEGIN_SRC sh -r -n
+    tar -xvf jdk-7u45-linux-i586.tar.gz
+  #+END_SRC
+  下载[[http://www.eclipse.org/downloads/][Eclipse]]，解压缩：
+  #+BEGIN_SRC sh -r -n
+    tar -xvf eclipse-standard-kepler-R-linux-gtk.tar.gz
+  #+END_SRC
+  将以上得到的两个目录移动到~/local目录下。
+* 配置
+  1. 环境变量
+     #+BEGIN_SRC sh -r -n
+       vi ~/.profile
+     #+END_SRC
+     添加如下内容：
+     #+BEGIN_SRC sh -r -n
+       JAVA_HOME="~/local/jdk1.7.0_45"
+       CLASS_PATH=.:$JAVA_HOME/lib
+       export JAVA_HOME CLASS_PATH
+     #+END_SRC
+  2. update-alternatives
+     #+BEGIN_SRC sh -r -n
+       sudo update-alternatives --install /usr/bin/java java ~/local/jdk1.7.0_45/bin/java 300
+       sudo update-alternatives --install /usr/bin/javac javac ~/local/jdk1.7.0_45/bin/javac 300
+       sudo update-alternatives --install /usr/bin/jps jps ~/local/jdk1.7.0_45/bin/jps 300
+       sudo update-alternatives --config java
+     #+END_SRC
+     如果已经安装了OpenJDK，上面最后一条命令出现的选项中选择2，否则可以不运行该命令。至此Java安装完成。
+* Eclipse手动安装
+  #+BEGIN_SRC sh -r -n
+    vi ~/.local/share/applications/eclipse.desktop
+  #+END_SRC
+  添加如下内容：
+  #+BEGIN_SRC conf-unix -r -n
+    [Desktop Entry]
+    Name=Eclipse
+    Comment=EclipseSDK
+    Exec=~/local/eclipse/eclipse
+    Icon=~/local/eclipse/icon.xpm
+    Terminal=false
+    Type=Application
+    Categories=Application;Development;
+  #+END_SRC
+  注销并重新登陆后就可以在Unity中看到Eclipse的图标。

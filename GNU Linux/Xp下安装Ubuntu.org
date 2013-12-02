@@ -1,0 +1,91 @@
+#+BLOG: cnblogs
+#+POSTID: 3440389
+#+DATE: [2013-11-24 日 18:35]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: GNU Linux
+#+TAGS:
+#+DESCRIPTION: Steps to install Ubuntu from hard disk and things to do after installtion.
+#+TITLE: Xp下安装Ubuntu
+
+* 准备工作
+  1. 下载Ubuntu 12.04 desktop镜像。
+  2. 下载grub4dos。
+  3. 复制grub4dos中的grldr, menu.lst到C盘(WinXP系统盘)根目录下。
+  4. 复制Ubuntu安装镜像到C盘，用压缩软件打开镜像，将casper目录下的vmlinuz和initrd.lz解压到C盘。
+* 设置
+** 修改 menu.lst，在文件尾添加以下内容：
+   #+BEGIN_SRC conf-unix -r -n
+     title Install Ubuntu 12.04 LTS
+     root (hd0,0)
+     kernel (hd0,0)/vmlinuz boot=casper iso-scan/filename=/ubuntu-12.04-desktop-i386.iso ro quiet splash locale=zh_CN.UTF-8
+     initrd (hd0,0)/initrd.lz
+   #+END_SRC
+   其中(hd0,0)对应第一块硬盘的第一个分区，"ubuntu-12.04-desktop-i386.iso"对应安装镜像的名称。
+** 修改boot.ini，打开文件后，在文件最后添加如下内容
+   #+BEGIN_SRC conf-unix -r -n
+     c:\grldr="Ubuntu 12.04 LTS Install"
+   #+END_SRC
+* 安装过程
+** 重启计算机，选择：
+   #+BEGIN_EXAMPLE -r -n
+       Ubuntu 12.04 LTS Install
+   #+END_EXAMPLE
+   在之后的界面中选择：
+   #+BEGIN_EXAMPLE -r -n
+       Install Ubuntu 12.04 LTS
+   #+END_EXAMPLE
+   之后就进入了与光盘相同的安装界面，与光盘安装不同的是：
+   1. 在开始安装前， Alt+Ctrl+t 调出终端，输入指令：
+      #+BEGIN_SRC sh -r -n
+        sudo umount -l /isodevice
+      #+END_SRC -r -n
+   2. 在安装时，会弹出一个警告，大意是有个分区正在使用，在下面的分区操作中不能对该分区进行操作了，问是否卸载该分区，选择否，即不卸载该分区，原因是目前进行的是硬盘安装，需要挂载分区以读取数据。
+   除了以上两点，硬盘安装之后的步骤与光盘安装是相同的。
+** 保留以前 Ubuntu 的 /home 分区
+   在Ubuntu安装类型界面中，选择最后一个“*其他选项*”进行手动分区。这里使用的分区方案是：
+   | 分区      | 大小 | 挂载点 |
+   | /dev/sda5 | 2GB  | swap   |
+   | /dev/sda6 | 20GB | /      |
+   | /dev/sda7 | 50GB | /home  |
+   该分区方案的关键是home分区是单独的，以后重装系统时home分区中的数据会被保留下来。
+** 使用NTLoader引导Ubuntu
+   Ubuntu安装过程中如果不设定引导器的安装位置，默认会把grub(grub2)安装到主引导记录(mbr)里面，这样虽然能够启动现有的Windows系统和Ubuntu系统，但是如果以后重新安装了Windows系统，将不能启动Ubuntu。
+   有两种方法可以用Windows来引导Ubuntu，对不同的Windows系统，方法如下：
+   1. Windows XP
+      Windows XP下可以用grub4dos引导Ubuntu，但前提是安装 Ubuntu 时要将引导器安装到了单独的分区中，而不是默认的安装到了 mbr 中。具体步骤如下：
+      1. 安装 grub4dos，过程同上。
+      2. 编辑menu.lst文件，添加如下内容：
+         #+begin_example -r -n
+           title Ubuntu 12.04
+           rootnoverify (hd0,5)
+           kernel /grub/core.img
+         #+end_example
+         其中(hd0,5)指的是/dev/sda6，这里假设引导器被安装在/dev/sda6。
+      3. 也可以选择不安装grub4dos，采用下面的方式
+         系统安装好以后，使用安装界面中的终端， 输入下面的命令生成ubuntu.boot：
+         #+begin_src sh -r -n
+           #使用df命令查看分区情况
+           sudo dd if=/dev/sda/[boot 分区] of=[输出目录，比如 ./ubuntu.boot] bs=512 count=1
+         #+end_src
+         复制ubuntu.boot到C盘，在C:/boot.ini中添加如下内容：
+         #+BEGIN_SRC conf-unix -r -n
+           c:\grldr="Ubuntu 12.04 LTS Install"
+         #+END_SRC
+         之后在系统选择界面就可以启动Ubuntu了。
+   2. Vista or Win7 (未验证)
+      在Win7系统盘下创建boot.ini文件，内容如下：
+      #+begin_example -r -n
+        [boot loader]
+        timeout=30
+        default=C:\grldr
+        [operating systems]
+        C:\grldr="Grub4dos"
+      #+end_example
+      剩下的与Xp系统下的步骤相同。
+* 安装完成后要做的
+  1. 安装unrar, 7zip压缩与解压缩软件。
+  2. 安装ibus-sunpinyin输入法，并下载更多的词库，使用词库加速脚本加速输入。
+  3. 安装git。
+  4. 安装Java。
+  5. 配置邮件客户端。
+     ...
