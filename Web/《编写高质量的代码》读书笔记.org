@@ -1,0 +1,134 @@
+#+BLOG: cnblogs
+#+POSTID: 2490874
+#+DATE: [2014-01-01 星期三 21:27]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: Web
+#+TAGS: reading notes
+#+DESCRIPTION: Just as its name applies.
+#+TITLE: 《编写高质量的代码》读书笔记
+* 第 3 章 高质量的 HTML
+** 标签语义对照表
+   #+CAPTION: 标签语义对招表
+   | 标签名     | 英文全拼              | 中文翻译         |
+   |------------+-----------------------+------------------|
+   | div        | division              | 分隔             |
+   | span       | span                  | 范围             |
+   | ol         | ordered list          | 有序列表         |
+   | ul         | unordered list        | 无序列表         |
+   | li         | list item             | 列表项目         |
+   | dl         | definition list       | 定义列表         |
+   | dt         | definition term       | 定义术语         |
+   | dd         | definition descripion | 定义表述         |
+   | del        | deleted               | 删除             |
+   | ins        | inserted              | 插入             |
+   | h1~h6      | header 1 to header 6  | 标题 1 到标题 6  |
+   | p          | paragraph             | 段落             |
+   | hr         | horizontal rule       | 水平尺           |
+   | a          | anchor                | 锚               |
+   | abbr       | abbreviation          | 缩写词           |
+   | acronym    | acronym               | 取首字母的缩写词 |
+   | address    | address               | 地址             |
+   | var        | variable              | 变量             |
+   | pre        | preformatted          | 预定义格式       |
+   | blockquote | block quotation       | 区块引用语       |
+   | strong     | strong                | 加重             |
+   | em         | emphasized            | 强调             |
+   | b          | bold                  | 粗体             |
+   | i          | italic                | 斜体             |
+   | big        | big                   | 变大             |
+   | small      | small                 | 变小             |
+   | sup        | superscripted         | 上标             |
+   | sub        | subscripted           | 下标             |
+   | br         | break                 | 换行             |
+   | center     | center                | 居中             |
+   | font       | font                  | 字体             |
+   | u          | underline             | 下划线           |
+   | s          | stikethrough          | 删除线           |
+   | fieldset   | fieldset              | 域集             |
+   | legend     | legend                | 图标             |
+   | caption    | caption               | 标题             |
+** 表单
+   1. 表单域要用 filedset 标签包起来，并用 legend 标签说明表单的用途;
+   2. 每个 input 标签对应的说明文本都需要用 label 标签，并通过为 input 设置 id 属性，在 label 标签中设置 "for=someid" 来让说明文本与相应的 input 关联起来。
+      #+BEGIN_SRC html -n -r
+        <form action="" method="">
+          <fieldset>
+            <legend>登录表单</legend>
+            <p><label for="name">帐号：</label><input type="text" id="name"/></p>
+            <p><label for="pw">密码：</label><input type="password" id="pw"></p>
+            <input type="submit" value="登录" class="subBtn" />
+          </fieldset>
+        </form>
+      #+END_SRC
+** 表格
+   表格标题要用 caption，表头要用 thead 包围，主题部分用 tbody 包围，尾部要用 tfoot 包围，表头和一般单元格要区分开，表头用 th，一般单元格用 td
+   #+BEGIN_SRC html -n -r
+     <table border="1">
+       <caption>几种页面实现的比较</caption>
+       <thead>
+         <tr><th>实现方式</th><th>代码量</th><th>搜索引擎友好</th><th>特殊终端兼容</th></tr>
+       </thead>
+       <tbody>
+         <tr><td></td> ... </tr>
+       </tbody>
+     </table>
+   #+END_SRC
+** 语义化标签应注意的其它问题
+   - 尽可能减少无语义标签 div 和 span；
+   - 在语义不明显，既可以用 p 也可以用 div 的地方，尽量用 p，因为 p 默认情况下有上下间距，去样式后的可读性更好，对兼容性特殊终端有利；
+   - 不要使用纯样式标签，例如 b、font 和 u 等，改用 css 设置。语义上需要强调的文本可以包在 strong 或 em 标签里，strong 和 em 有 “强调”的语义，其中 strong 的默认样式是加粗，而 em 的默认样式是斜体。
+* 第 4 章 高质量的 CSS
+** 怪异模式和 DTD
+   标准模式中，网页元素的宽度由 padding、border、width 三者的宽度相加决定的，而在怪异模式中，width 本身就包括了 padding 和 border 的宽度。此外，标准模式下的经典居中方法——设定 width，然后 margin-left: auto; margin-right: auto;——在怪异模式下也无法正常工作。
+   一般情况下，我们应避免触发怪异模式，选用标准模式。
+   DTD 全称 Document Type Definition，即文档定义类型。可以通过比较 HTML 文档 和 DTD 文件来看文档是否符合规范。一个 DTD 文档包含元素的定义规则、元素间关系的定义规则、元素可使用的属性、可使用的实体或符号规则。
+   按照 W3C 标准，我们需要在 HTML 的最开始声明文件的 DTD 类型。如果漏写 DTD 声明，Firefox 仍然会按照标准模式来解析网页，但在 IE 中（包括IE 6、IE 7、IE 8）就会触发怪异模式。
+** 如何组织 CSS
+   将网页内的所有样式，按照职能分为三大类：base、common 和 page。
+** 模块化 CSS——在 CSS 中引入面向对象编程思想
+   1. 单一职责
+      模块与模块之间尽量不要包含相同的部分，如果有相同部分，应将它们提取出来，拆分成一个独立的模块。
+      模块应在保证数量尽可能少的原则下，做到尽可能简单，以提高复用性。
+   2. 多用组合，少用继承
+   3. 低权重原则——避免滥用子选择器
+** CSS 常见问题
+   1. CSS hack——IE 条件注释法
+      #+BEGIN_SRC html -n -r
+        <!-- [if IE]>
+        <link rel="stylesheet" type="text/css" href="url" />     
+        <![endif]-->
+        <!-- [if IE 6]>
+        <link rel="stylesheet" type="text/css" href="url" />     
+        <![endif]-->
+        <!-- [if gt IE 6]>
+        <link rel="stylesheet" type="text/css" href="url" />     
+        <![endif]-->
+        <!-- [if ! IE 7]>
+        <link rel="stylesheet" type="text/css" href="url" />     
+        <![endif]-->
+      #+END_SRC
+   2. 正确的伪类顺序
+      love hate 原则：l(link)ov(visited)e h(hover)a(active)te
+   3. 触发 IE 下的 hasLayout
+      zoom: 1，如果 zoom:1 无效的情况下，设置 “position:relative”
+   4. 块级元素和行内元素的区别
+      1. 块级元素会独占一行，默认情况下，其宽度会自动填满其父元素宽度。行内元素不会独占一行，其宽度随元素的内容而变化。
+      2. 块级元素可以设置 width、height 属性，行内元素设置 width、height 无效。
+      3. 块级元素可以设置 margin、padding 属性。行内元素设置竖直方向的 padding 和 margin 无效。
+      4. 在 IE 中可以通过触发行内元素的 hasLayout 来模拟 display:inline-block;
+      5. relative、absolute 和 float
+         网页有 z 轴，通过 z-index 控制。默认情况下，所有元素都是在 z-index:0 这一层的。元素根据自己的 display 类型、长度、宽度、内外边距等属性顺序排列在 z-index:0 这一层里，这就是文档流。
+         设置 position:relative 或 position:absolute 会让元素浮起来，也就是 z-index 值大于0。其中， position:relative 会保留自己在 z-index:0 层的占位，而 position:absolute 会完全脱离文档流，不在 z-index:0 保留占位符，其位置是相对自己最近的一个设置了 position:relative 或 position:absolute 的祖先元素的，如果祖先元素都没有设置上面的两个属性，那么就相对于 body 元素。
+      6. flash 与 IE 6 中的 select元素
+         窗口类型的元素一定会显示在非窗口类型元素的上方，如果同属非窗口类型，才会去判断 z-index 的大小。
+         flash 嵌入网页中，有个 wmode 属性，用于制定窗口模式，其值有 window（窗口）、opaque（非窗口不透明）、transparent（非窗口透明）三种。其默认值为 window。
+         因为 IE 和 Firefox 下是用不同的标签嵌入 flash 的（IE 用 object，Firefox用 embed），所以需要对两种标签分别进行设置，代码如下：
+         #+CAPTION 设置 flash 的显示模式
+         #+BEGIN_SRC html -n -r
+           <object type="application/x-shockwave-Flash" classid="">
+             <param value="xxxxxx.swf" name="movie"></param>
+             <param value="opaque" name="wmode"></param>
+             <embed wmode="opaque" type="application/x-shockwave-Flash" src="xxxxxx.swf"></embed>
+           </object>
+         #+END_SRC
+         select 元素在 IE 6 下也是一窗口形式显示的，这是 IE 6 的一个 Bug。用一个与要显示在顶端的元素大小相同的 iframe 遮住 select 元素。

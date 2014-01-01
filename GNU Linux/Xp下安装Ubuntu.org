@@ -3,7 +3,7 @@
 #+DATE: [2013-11-24 日 18:35]
 #+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
 #+CATEGORY: GNU Linux
-#+TAGS:
+#+TAGS: practice
 #+DESCRIPTION: Steps to install Ubuntu from hard disk and things to do after installtion.
 #+TITLE: Xp下安装Ubuntu
 

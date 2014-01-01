@@ -1,0 +1,299 @@
+#+BLOG: cnblogs
+#+POSTID: 2491017
+#+DATE: [2014-01-01 星期三 21:27]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: MySQL
+#+TAGS: practice
+#+DESCRIPTION: Some MySQL practice experience, including table management, user management , garbage characters fixing and some error fixing.
+#+TITLE: MySQL实践总结
+* MySQL5.x在Windows平台下的安装配置
+  1. 下载
+     首先到http://www.mysql.com/downloads/mysql/ 下载安装文件，我选择的是非安装版（noinstall）。安装版与非安装版的区别是安装版自动添加服务，而非安装版需要手动添加服务。
+  2. 解压
+     将下载的压缩文件解压到安装目录中，比如F:\Program Files\。
+  3. 添加MySQL的服务
+     将MySQL添加到Windows的服务中，可以使MySQL开机启动。具体步骤如下：
+     1.复制MySQL安装目录下的my-medium.ini为my.ini(根据需要也可以复制其它my-*.ini)
+     2.在运行中输入cmd，获得Windows命令行，输入F:\Program Files\mysql-5.1.50-win32\bin\mysqld --install MySQL --defaults-file=F:\Program Files\mysql-5.1.50-win32\my.ini，其中MySQL是服务名，defaults-file是MySQL的配置文件。
+     3.启动和停止MySQL
+     法一、命令行中输入net start (服务名)或net stop (服务名)
+     法二、在运行中输入services.msc，找到MySQL进行操作。
+  4. 设置MySQL
+     打开my.ini，找到[mysqld]，添加
+     #+BEGIN_SRC conf-windows -n -r
+       character-set-server=utf8
+       collation-server=utf8_general_ci
+       default-character-set=utf8
+     #+END_SRC
+     找到[mysql]，添加
+     #+BEGIN_SRC conf-windows -n -r
+       no-beep
+       default-character-set=utf8
+     #+END_SRC
+     上面添加的选项如果已经存在就修改它为上面的值。
+  5. 从外部导入sql脚本
+     1.图形工具要注意设置文件的编码
+     2.使用命令行mysql需要先运行：set names (sql文件的编码)
+* 连接与断开服务器 (参考MySQL5.1中文参考手册，jerry整理)
+  #+BEGIN_SRC sh -n -r
+    mysql -h host -u user -p
+    Enter password: ********
+  #+END_SRC
+  host和user分别代表MySQL服务器运行的主机名和MySQL账户用户名。
+* 创建数据库和用户 (包括如何避免乱码)
+  1. 创建并选择数据库
+     #+BEGIN_SRC sql -n -r
+       CREATE DATABASE menagerie CHARACTER SET utf8 COLLATE utf8_general_ci; 
+     #+END_SRC
+     创建数据库的时候指定编码可以防止出现乱码。创建数据库并不表示选定并使用它，你必须明确地操作。为了使menagerie成为当前的数据库，使用这个命令：
+     #+BEGIN_SRC sql -n -r
+       USE menagerie
+     #+END_SRC
+  2. 创建用户并赋予用户权限
+     为数据库创建单独的用户，这样可以最小化用户的权限，提高数据库的安全性。使用下面的命令创建用户并赋予用户对数据库menagerie的操作权限：
+     #+BEGIN_SRC sql -n -r
+       GRANT ALL PRIVILEGES ON menagerie.* TO 'user'@'localhost' identified by 'password';
+     #+END_SRC
+     该代码创建了一个叫user的用户，该用户在数据库服务器本地对数据库menagerie所有的操作权限。
+  3. 创建表
+     创建数据库是很容易的部分，但是在这时它是空的，正如SHOW TABLES将告诉你的：
+     #+BEGIN_SRC sql -n -r
+       SHOW TABLES;
+     #+END_SRC
+     Empty set (0.00 sec)
+     使用下面的命令创建表：
+     #+BEGIN_SRC sql -n -r
+       CREATE TABLE TableA (
+        // contents going here
+       ) ENGINE=INNODB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+     #+END_SRC
+  4. 使用JDBC连接数据库
+     #+BEGIN_EXAMPLE
+       jdbc:mysql://localhost:3306/database?useUnicode=true&amp;characterEncoding=UTF-8
+     #+END_EXAMPLE
+  5. 使数据库表的id重新从1开始编号
+     #+BEGIN_SRC sql -n -r
+       truncate table 表名
+     #+END_SRC
+  6. 开启远程连接
+     #+BEGIN_SRC sql -n -r
+       GRANT ALL PRIVILEGES ON *.* TO 'myuser'@'%'IDENTIFIED BY 'mypassword' WITH GRANT OPTION;
+     #+END_SRC
+     修改/etc/mysql/my.cnf
+     #+BEGIN_SRC conf -n -r
+       bind-address=127.0.0.1
+     #+END_SRC
+     然后
+     #+BEGIN_SRC sh -n -r
+       sudo /etc/init.d/mysql restart
+     #+END_SRC
+  7. Hibernate写入MySQL乱码
+     Hibernate MySQL 中文乱码问题
+     环境：Hibernate 3 + MySQL5.0（MySQL的编码已设置为utf8）
+     1. 问题：通过Hibernate向MySQL写入中文后，通过Hibernate取回数据，在console中打印java对象显示正常。但在MySQL Query Browser中看到的是乱码。
+        原因：Hibernate的基础还是JDBC，所以一样需要设置characterEncoding！
+     2. 解决方法：
+        在 hibernate.cfg.xml中应该这样写
+        #+BEGIN_SRC nxml -n -r
+          <property name="connection.url">jdbc:mysql://localhost:3306/test?useUnicode=true&amp;characterEncoding=UTF-8</property>  
+        #+END_SRC
+        如果用hibernate.properties
+        #+BEGIN_SRC conf-javaprop -n -r
+          hibernate.connection.url jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8  
+        #+END_SRC
+        ps：处理中文的话，characterEncoding用GBK也可以。不过UTF-8可以表示其它更多语言的字符。
+* 数据库管理
+** 备份与恢复
+*** mysqldump：数据库备份程序
+    1. mysqldump经常用来个备份整个数据库，备份的命令如下：
+       #+BEGIN_SRC sh -n -r
+         mysqldump --opt db_name -h host -u user -p > backup-file.sql
+       #+END_SRC
+    2. 如果只想如果你只想转储表的结构，用下面的命令：
+       #+BEGIN_SRC sh -n -r
+         mysqldump --opt db_name -h host -u user -p -d > backup-file.sql
+       #+END_SRC
+       或者
+       #+BEGIN_SRC sh -n -r
+         mysqldump --opt db_name -h host -u user -p --no-data > backup-file.sql
+       #+END_SRC
+    3. 如果指向转储表的数据而没有create table的语句，用如下的命令：
+       #+BEGIN_SRC sh -n -r
+         mysqldump --opt db_name -h host -u user -p -t > backup-file.sql
+       #+END_SRC
+    4. mysqldump也可用于从一个MySQL服务器向另一个服务器复制数据时装载数据库：
+       #+BEGIN_SRC sh -n -r
+         mysqldump --opt db_name | mysql --host=remote_host -C db_name
+       #+END_SRC
+    5. 可以用一个命令转储几个数据库：
+       #+BEGIN_SRC sh -n -r
+         mysqldump ---database db_name1 [db_name2 ...] > my_databases.sql
+       #+END_SRC
+*** 将转储文件读回到服务器 (恢复)
+    #+BEGIN_SRC sh -n -r
+      mysql db_name < backup-file.sql
+    #+END_SRC
+    或者为：
+    #+BEGIN_SRC sh -n -r
+      mysql -e "source /path-to--backup/backup-file.sql" db_name
+    #+END_SRC
+* 字符集支持
+  字符集是一套符号和编码。校对规则是在字符集内用于比较字符的一套规则。
+** 确定默认字符集和校对
+   字符集和校对规则有4个级别的默认设置：服务器级、数据库级、表级和连接级。
+   1. 服务器字符集和校对
+   2. 数据库字符集和校对
+      每一个数据库有一个数据库字符集和一个数据库校对规则，它不能够为空。CREATE DATABASE和ALTER DATABASE语句有一个可选的子句来指定数据库字符集和校对规则：
+      #+BEGIN_SRC sql -n -r
+        CREATE DATABASE db_name
+        [[DEFAULT] CHARACTER SET charset_name]
+        [[DEFAULT] COLLATE collation_name]
+        
+        ALTER DATABASE db_name
+        [[DEFAULT] CHARACTER SET charset_name]
+        [[DEFAULT] COLLATE collation_name]
+      #+END_SRC
+      例如：
+      #+BEGIN_SRC sql -n -r
+        CREATE DATABASE db_name
+        DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
+      #+END_SRC
+      MySQL这样选择数据库字符集和数据库校对规则：
+      · 如果指定了CHARACTER SET X和COLLATE Y，那么采用字符集X和校对规则Y。
+      · 如果指定了CHARACTER SET X而没有指定COLLATE Y，那么采用CHARACTER SET X和CHARACTER SET X的默认校对规则。
+      · 否则，采用服务器字符集和服务器校对规则。
+   3. 表字符集和校对
+      每一个表有一个表字符集和一个校对规则，它不能为空。为指定表字符集和校对规则，CREATE TABLE 和ALTER TABLE语句有一个可选的子句：
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE tbl_name (column_list)
+        [DEFAULT CHARACTER SET charset_name [COLLATE collation_name]]
+        
+        ALTER TABLE tbl_name
+        [DEFAULT CHARACTER SET charset_name] [COLLATE collation_name]
+      #+END_SRC
+      例如：
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE t1 ( ... )
+        DEFAULT CHARACTER SET latin1 COLLATE latin1_danish_ci;
+      #+END_SRC
+      MySQL按照下面的方式选择表字符集和 校对规则：
+      · 如果指定了CHARACTER SET X和COLLATE Y，那么采用CHARACTER SET X和COLLATE Y。
+      · 如果指定了CHARACTER SET X而没有指定COLLATE Y，那么采用CHARACTER SET X和CHARACTER SET X的默认校对规则。
+      · 否则，采用服务器字符集和服务器校对规则。
+   4. 列字符集和校对
+      每一个“字符”列（即，CHAR、VARCHAR或TEXT类型的列）有一个列字符集和一个列 校对规则，它不能为空。列定义语法有一个可选子句来指定列字符集和校对规则：
+      #+BEGIN_SRC sql -n -r
+        col_name {CHAR | VARCHAR | TEXT} (col_length)
+        [CHARACTER SET charset_name [COLLATE collation_name]]
+      #+END_SRC
+      例如：
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE Table1 (
+            column1 VARCHAR(5) CHARACTER SET latin1 COLLATE latin1_german1_ci
+        );
+      #+END_SRC
+      MySQL按照下面的方式选择列字符集和校对规则：
+      · 如果指定了CHARACTER SET X和COLLATE Y，那么采用CHARACTER SET X和COLLATE Y。
+      · 如果指定了CHARACTER SET X而没有指定COLLATE Y，那么采用CHARACTER SET X和CHARACTER SET X的默认校对规则。
+      · 否则，采用表字符集和服务器校对规则。
+      CHARACTER SET和COLLATE子句是标准的SQL。
+   5. 字符集和校对分配示例
+      以下例子显示了MySQL怎样确定默认字符集和校对规则。
+      示例1：表和列定义
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE t1 (
+            c1 CHAR(10) CHARACTER SET latin1 COLLATE latin1_german1_ci
+        ) DEFAULT CHARACTER SET latin2 COLLATE latin2_bin;
+      #+END_SRC
+      在这里我们有一个列使用latin1字符集和latin1_german1_ci校对规则。是显式的定义，因此简单明了。需要注意的是，在一个latin2表中存储一个latin1列不会存在问题。
+      示例2：表和列定义
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE t1 (
+            c1 CHAR(10) CHARACTER SET latin1
+        ) DEFAULT CHARACTER SET latin1 COLLATE latin1_danish_ci;
+      #+END_SRC
+      这次我们有一个列使用latin1字符集和一个默认校对规则。尽管它显得自然，默认校对规则却不是表级。相反，因为latin1的默认校对规则总是latin1_swedish_ci，列c1有一个校对规则latin1_swedish_ci（而不是latin1_danish_ci）。
+      示例3：表和列定义
+      #+BEGIN_SRC sql -n -r
+        CREATE TABLE t1 (
+            c1 CHAR(10)
+        ) DEFAULT CHARACTER SET latin1 COLLATE latin1_danish_ci;
+      #+END_SRC
+      我们有一个列使用一个默认字符集和一个默认校对规则。在这种情况下，MySQL查找表级别来确定列字符集和 校对规则。因此，列c1的字符集是latin1，它的 校对规则是latin1_danish_ci。
+      示例4：数据库、表和列定义
+      #+BEGIN_SRC sql -n -r
+        CREATE DATABASE d1
+        DEFAULT CHARACTER SET latin2 COLLATE latin2_czech_ci;
+        USE d1;
+        CREATE TABLE t1 (
+            c1 CHAR(10)
+        );
+      #+END_SRC
+      我们创建了一个没有指定字符集和校对规则的列。我们也没有指定表级字符集和校对规则。在这种情况下，MySQL查找数据库级的相关设置。（数据库的设置变为表的设置，其后变为列的设置。）因此，列c1的字符集为是latin2，它的 校对规则是latin2_czech_ci。
+   6. 连接字符集和校对
+      在客户端和服务器的连接处理中也涉及了字符集和校对规则变量。每一个客户端有一个连接相关的字符集和校对规则变量。
+      考虑什么是一个“连接”：它是连接服务器时所作的事情。客户端发送SQL语句，例如查询，通过连接发送到服务器。服务器通过连接发送响应给客户端，例如结果集。对于客户端连接，这样会导致一些关于连接的字符集和 校对规则的问题，这些问题均能够通过系统变量来解决：
+      · 当查询离开客户端后，在查询中使用哪种字符集？
+      服务器使用character_set_client变量作为客户端发送的查询中使用的字符集。
+      · 服务器接收到查询后应该转换为哪种字符集？
+      转换时，服务器使用character_set_connection和collation_connection系统变量。它将客户端发送的查询从character_set_client系统变量转换到character_set_connection（除非字符串文字具有象_latin1或_utf8的引介词）。collation_connection对比较文字字符串是重要的。对于列值的字符串比较，它不重要，因为列具有更高的 校对规则优先级。
+      · 服务器发送结果集或返回错误信息到客户端之前应该转换为哪种字符集？
+      character_set_results变量指示服务器返回查询结果到客户端使用的字符集。包括结果数据，例如列值和结果元数据（如列名）。
+      你能够调整这些变量的设置，或可以依赖默认值（这样，你可以跳过本章）。
+      有两个语句影响连接字符集：
+      #+BEGIN_SRC sql -n -r
+        SET NAMES 'charset_name'
+        SET CHARACTER SET charset_name
+      #+END_SRC
+      SET NAMES显示客户端发送的SQL语句中使用什么字符集。因此，SET NAMES 'cp1251'语句告诉服务器“将来从这个客户端传来的信息采用字符集cp1251”。它还为服务器发送回客户端的结果指定了字符集。（例如，如果你使用一个SELECT语句，它表示列值使用了什么字符集。）
+      SET NAMES 'x'语句与这三个语句等价：
+      #+BEGIN_SRC sql -n -r
+        mysql> SET character_set_client = x;
+        mysql> SET character_set_results = x;
+        mysql> SET character_set_connection = x;
+      #+END_SRC
+      将x设置为character_set_connection也就设置了collation_connection是x的默认校对规则。
+      SET CHARACTER SET语句是类似的，但是为 默认数据库设置连接字符集和校对规则。SET CHARACTER SET x语句与这三个语句等价：
+      #+BEGIN_SRC sql -n -r
+        mysql> SET character_set_client = x;
+        mysql> SET character_set_results = x;
+        mysql> SET collation_connection = @@collation_database;
+      #+END_SRC
+      当一个客户端连接时，它向服务器发送希望使用的字符集名称。服务器为那个字符集设置character_set_client、character_set_results和 character_set_connection变量。（实际上，服务器为使用该字符集执行一个SET NAMES操作。）
+      对于mysql客户端，如果你希望使用与默认字符集不同的字符集，不需要每次启动时执行SET NAMES语句。可以在mysql语句行中或者选项文件中添加一个--default-character-set选项设置。例如，每次运行mysql时，以下的选项文件设置把三个字符集变量修改为koi8r：
+      #+BEGIN_SRC conf -n -r
+        [mysql]
+        default-character-set=koi8r
+      #+END_SRC
+* MySQL 错误调试（windows xp 下）
+  如果 MySQL 无法启动，首先使用 mysqld.exe --console，可以查看出错信息。
+** <2012-03-22 星期四 00:47> XP 下的 mysql 无法启动
+   今天发现我的XP下的MySQL无法启动了，运行
+   <MySQL install dir>\bin\mysqld.exe --console
+   出现的信息如下：
+   120322  0:06:42 [Note] Plugin 'FEDERATED' is disabled.
+   120322  0:06:42  InnoDB: Started; log sequence number 0 9952173
+   mysqld.exe: File '.\mysql-bin.000588' not found (Errcode: 2)
+   120322  0:06:42 [ERROR] Failed to open log (file '.\mysql-bin.000588', errno 2)
+   120322  0:06:42 [ERROR] Could not open log file
+   120322  0:06:42 [ERROR] Can't init tc log
+   120322  0:06:42 [ERROR] Aborting
+   
+   120322  0:06:42  InnoDB: Starting shutdown...
+   120322  0:06:48  InnoDB: Shutdown completed; log sequence number 0 9952173
+   120322  0:06:48 [Note] mysqld.exe: Shutdown complete
+   一开始怀疑是权限的问题，因为我用的是 Ubuntu 系统，平时会访问 MySQL 安装所在的 F 盘，我担心 Ubuntu 根据 Linux 下的习惯改变 Windows 下的目录的访问权限，因此查询如何修改 XP 下的目录权限，虽然不是这个原因，也学习了一些，要修改 XP 的目录权限，首先在 Explorer 菜单的 工具 > 文件夹选项 > 查看 中，去掉“使用简单文件共享（推荐）”前面的勾。然后右击想要改变权限的文件夹图标 > 属性 > 安全 中，调整不同的用户对该目录的访问方式。
+
+   后来发现网上有人也有这个问题，根据上面的信息，发现错误来自于 log-bin，因此他的方法是注释掉 MySQL 配置文件 my.ini 中的
+   log-bin=mysql-bin 和
+   binlog_format=mixed
+   关闭掉这个功能。
+   我试了一下，可以解决问题，MySQL 可以启动了，可是这样就不能拥有 MySQL 的这个功能了。但无意中我在网页上看到了一个人的 mysql-bin.index 文件的内容，发现里面是类似如下的信息：
+   .\mysql-bin.000001
+   .\mysql-bin.000002
+   ...
+   .\mysql-bin.000993
+   
+   我打开我的 <MySQL install dir>\data\mysql-bin.index，里面最后一行是
+   .\mysql-bin.000588，这个正是错误信息里面的，可是我的 data 目录下只是到
+   .\mysql-bin.000587。问题就是出在这里，也就是在索引中有 .\mysql-bin.000588，但实际上没有，删除此行。问题解决了！

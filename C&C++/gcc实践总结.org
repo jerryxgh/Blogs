@@ -1,0 +1,44 @@
+#+BLOG: cnblogs
+#+POSTID: 2491028
+#+DATE: [2014-01-01 星期三 22:14]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: C&C++
+#+TAGS: practice
+#+DESCRIPTION: Gcc practice experience.
+#+TITLE: gcc实践总结
+* gcc命令格式：
+  #+BEGIN_SRC sh -n -r
+    gcc [options] [filenames]
+  #+END_SRC
+  #+CAPTION: gcc选项
+  | 选项             | 选项描述                               |
+  |------------------+----------------------------------------|
+  | -x language      | 指定使用的语言（C、C++或汇编）         |
+  | -c               | 只对文件进行便也和汇编，但不进行连接   |
+  | -S               | 只对文件进行编译，但不汇编和连接       |
+  | -E               | 只对文件进行预处理，但不编译汇编及连接 |
+  | -o [file1] file2 | 将文件file2编译成可执行文件file1       |
+  | -I library       | 制定所使用的库文件                     |
+  | -w               | 禁止警告信息                           |
+  | -pedantic        | 严格要求符合ANCI标准                   |
+  | -Wall            | 显示所有警告                           |
+  | -g               | 加入调试信息以便于调试                 |
+  | -O(-O1)          | 对编译的代码进行优化                   |
+  | -O2              | 比-O更高级别的优化                     |
+  | -O3              | 更高级别的优化                         |
+  | -v               | 显示版本                               |
+  | -m               | 根据不同的微处理器进行优化，例如-m486 |
+  #+TBLFM: 
+* gcc编译流流程
+    1. 预处理器 cpp
+       完成宏的求值、条件编译以及一些需要吧代码传递到编译器前的工作。
+    2. 编译器 gcc gcc -S
+       将源代码编译成汇编代码
+    3. GNU 汇编器 as
+       as 处理汇编代码，产生目标文件（二进制文件）
+    4. GNU 连接器 ld
+       ld 将程序的各个模块组合起来产生最后的可执行文件
+    5. 文件处理器 ar
+       可以用 ar 建立静态库，把几个小文件组成一个大文件。
+    6. 库显示 ldd
+       可以显示一个可之心文件运行时需要的一些共享库。是 Library Dependency Display 的缩写。

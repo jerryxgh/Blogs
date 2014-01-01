@@ -3,7 +3,7 @@
 #+DATE: [2013-11-24 日 18:35]
 #+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
 #+CATEGORY: GNU Linux
-#+TAGS: Java, Ubuntu
+#+TAGS: practice
 #+DESCRIPTION: There is no Oracle JDK in APT repository of Ubuntu12.04 and up versions, this article tell how to install Oracle JDK in Ubuntu. Based on that, tell how to install Eclipse manually.
 #+TITLE: Ubuntu安装JDK和Eclipse
 * 准备工作
