@@ -88,4 +88,11 @@
   3. 安装git。
   4. 安装Java。
   5. 配置邮件客户端。
-     ...
+  6. 设置文件浏览和文字输入的背景色 豆沙绿
+     首先安装dconf-editor: sudo apt-get install dconf-editor；
+     然后打开dconf-editor， 找到org - gnome - desktop - interface - gtk-color-scheme 
+     
+     设置成豆沙绿的方法是：
+     base_color:#CCE8CF;bg_color:#CCE8CF
+  
+  ...
