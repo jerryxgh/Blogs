@@ -1,0 +1,91 @@
+#+BLOG: cnblogs
+#+POSTID: 3500964
+#+DATE: [2014-01-01 星期三 21:07]
+#+OPTIONS: toc:nil num:nil todo:nil pri:nil tags:nil ^:nil TeX:nil
+#+CATEGORY: Java
+#+TAGS: practice
+#+DESCRIPTION: How to write ant script and how to use ant to include other jar libs.
+#+TITLE: ant实践总结
+* ant脚本结构
+  ant使用XML格式的配置文件，默认的名称是build.xml。配置文件的根节点是project，且project节点至少含有一个target子节点，先上代码：
+  #+BEGIN_SRC nxml -n -r
+    <project name="MyProject" default="dist" basedir=".">
+    </project>
+  #+END_SRC
+  属性name表示项目的名称，default是在不指定任务时默认执行的任务，basedir用于从相对路径计算出绝对路径，如果没有设置，默认是配置文件（XML）所在的目录。
+    
+  定义变量使用的是property，格式如下：
+  #+BEGIN_SRC nxml -n -r
+    <property name="src" location="src"/>
+    <property name="src" value="value"/>
+  #+END_SRC
+  其中name是变量的名字，如果是location，该变量的值是location对应值的文件的路径;如果location已经是绝对路径则直接赋值给name对应的变量，如果location是相对目录，则将项目中basedir与该路径连接并赋值给name对应的变量。
+
+* 完整的buildfile示例
+  #+BEGIN_SRC nxml -n -r
+    <project name="MyProject" default="dist" basedir=".">
+        <description>
+            simple example build file
+        </description>
+        <!-- set global properties for this build -->
+        <property name="src" location="src"/>
+        <property name="build" location="build"/>
+        <property name="dist"  location="dist"/>
+    
+        <target name="init">
+            <!-- Create the time stamp -->
+            <tstamp/>
+            <!-- Create the build directory structure used by compile -->
+            <mkdir dir="${build}"/>
+        </target>
+    
+        <target name="compile" depends="init"
+                description="compile the source " >
+            <!-- Compile the java code from ${src} into ${build} -->
+            <javac srcdir="${src}" destdir="${build}"/>
+        </target>
+    
+        <target name="dist" depends="compile"
+                description="generate the distribution" >
+            <!-- Create the distribution directory -->
+            <mkdir dir="${dist}/lib"/>
+    
+            <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+            <jar jarfile="${dist}/lib/MyProject-${DSTAMP}.jar" basedir="${build}"/>
+        </target>
+    
+        <target name="clean"
+                description="clean up" >
+            <!-- Delete the ${build} and ${dist} directory trees -->
+            <delete dir="${build}"/>
+            <delete dir="${dist}"/>
+        </target>
+    </project>
+  #+END_SRC
+
+* 如何打jar包，如何把外部的jar包一起打包到目标jar中？
+  #+BEGIN_SRC nxml -n -r
+    <path id="build.classpath">
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <manifestclasspath property="manifest.classpath" jarfile="ExceltoXML.jar">
+        <classpath refid="build.classpath" />
+    </manifestclasspath>
+    <target name="jar" depends="compile">
+        <jar destfile="ExceltoXML.jar">
+            <fileset dir="build/classes"/>
+            <fileset dir="lib" />
+            <manifest>
+                <attribute name="Main-Class" value="xgh.ExceltoXML" />
+                <attribute name="Class-Path" value="${manifest.classpath}" />
+            </manifest>
+        </jar>
+    </target>
+  #+END_SRC
+  说明：manifestclasspath用来设置目标jar运行时候的环境变量，否则将会出现class not found的错误。
+
+* 参考文献
+  [[http://ant.apache.org/manual/using.html][Using Apache Ant - Writing a Simple Buildfile]]
+
